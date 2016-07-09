@@ -1,0 +1,10 @@
+[package]
+name = "remote-ff"
+version = "3.0.0"
+authors = ["Julian Blake Kongslie <jblake@jblake.org>"]
+
+[dependencies]
+hyper = "*"
+marksman_escape = "*"
+scraper = "*"
+time = "*"
