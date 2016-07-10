@@ -1,5 +1,4 @@
-use hyper;
-use time;
+use hyper::client::Client;
 
 mod ffn;
 mod hpffa;
@@ -22,7 +21,8 @@ pub struct ChapterInfo {
 }
 
 pub trait Site {
+    fn recognize(url: &str) -> Option<String>;
     fn get_url(id: &str) -> String;
-    fn get_info(client: &hyper::client::Client, id: &str) -> Option<StoryInfo>;
-    fn get_chapter(client: &hyper::client::Client, id: &str, chapter: u32) -> Option<ChapterInfo>;
+    fn get_info(client: &Client, id: &str) -> Option<StoryInfo>;
+    fn get_chapter(client: &Client, id: &str, chapter: u32) -> Option<ChapterInfo>;
 }

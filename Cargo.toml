@@ -6,7 +6,9 @@ authors = ["Julian Blake Kongslie <jblake@jblake.org>"]
 [dependencies]
 clap = "*"
 hyper = "*"
+lazy_static = "*"
 marksman_escape = "*"
+regex = "*"
 rustc-serialize = "*"
 scraper = "*"
 time = "*"

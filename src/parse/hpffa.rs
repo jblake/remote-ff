@@ -1,5 +1,6 @@
 use hyper;
 use parse::*;
+use regex::Regex;
 use sanitize::*;
 use scraper::{Html, Selector};
 use std::io::Read;
@@ -8,6 +9,19 @@ use time;
 pub struct Hpffa { }
 
 impl Site for Hpffa {
+    fn recognize(url: &str) -> Option<String> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"^http://www.hpfanficarchive.com/.*sid=(\d+)").unwrap();
+        }
+        match RE.captures(url) {
+            None => return None,
+            Some(m) => match m.at(1) {
+                None => return None,
+                Some(s) => return Some(s.to_string()),
+            },
+        }
+    }
+
     fn get_url(id: &str) -> String { format!("http://www.hpfanficarchive.com/stories/viewstory.php?sid={}", id) }
 
     fn get_info(client: &hyper::client::Client, id: &str) -> Option<StoryInfo> {
@@ -37,7 +51,7 @@ impl Site for Hpffa {
         return Some(StoryInfo {
             title: title.to_string(),
             author: author.to_string(),
-            chapters: chapters.parse::<u32>().unwrap(),
+            chapters: chapters.parse().unwrap(),
             updated: time::strptime(*&updated, "%B %d, %Y").unwrap().to_timespec().sec,
         });
     }

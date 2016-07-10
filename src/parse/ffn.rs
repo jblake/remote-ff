@@ -1,5 +1,6 @@
 use hyper;
 use parse::*;
+use regex::Regex;
 use sanitize::*;
 use scraper::{Html, Selector};
 use std::io::Read;
@@ -7,6 +8,19 @@ use std::io::Read;
 pub struct Ffn { }
 
 impl Site for Ffn {
+    fn recognize(url: &str) -> Option<String> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"^https?://(?:m|www)\.fanfiction\.net/s/(\d+)").unwrap();
+        }
+        match RE.captures(url) {
+            None => return None,
+            Some(m) => match m.at(1) {
+                None => return None,
+                Some(s) => return Some(s.to_string()),
+            },
+        }
+    }
+
     fn get_url(id: &str) -> String { format!("https://m.fanfiction.net/s/{}", id) }
 
     fn get_info(client: &hyper::client::Client, id: &str) -> Option<StoryInfo> {
@@ -43,8 +57,8 @@ impl Site for Ffn {
         return Some(StoryInfo {
             title: title.to_string(),
             author: author.to_string(),
-            chapters: chapters.parse::<u32>().unwrap(),
-            updated: updated.or(published).unwrap().parse::<i64>().unwrap(),
+            chapters: chapters.parse().unwrap(),
+            updated: updated.or(published).unwrap().parse().unwrap(),
         });
     }
 

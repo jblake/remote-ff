@@ -1,6 +1,8 @@
 extern crate clap;
 extern crate hyper;
+#[macro_use] extern crate lazy_static;
 extern crate marksman_escape;
+extern crate regex;
 extern crate rustc_serialize;
 extern crate scraper;
 extern crate time;
@@ -11,7 +13,6 @@ mod sanitize;
 mod parse;
 
 use clap::{App,Arg,SubCommand};
-use parse::Site;
 
 fn main() {
     let args = App::new("remote-ff")
@@ -31,42 +32,62 @@ fn main() {
              .value_name("FILE")
              .help("Database file for book metadata (default \"db.json\")")
              )
+        .subcommand(SubCommand::with_name("add")
+            .about("Add a new ebook")
+            .arg(Arg::with_name("url")
+                 .required(true)
+                 .multiple(true)
+                 .takes_value(true)
+                 .value_name("URL")
+                 .help("Url to add")
+                 )
+            )
         .subcommand(SubCommand::with_name("download")
             .about("Check for updates and rebuild .fb2 files")
+            )
+        .subcommand(SubCommand::with_name("prune")
+            .about("Stop checking for updates for an ebook")
+            .arg(Arg::with_name("id")
+                 .required(true)
+                 .multiple(true)
+                 .takes_value(true)
+                 .value_name("ID")
+                 .help("Story ID to prune")
+                 )
+            )
+        .subcommand(SubCommand::with_name("sync")
+            .about("Synchronize with a moonreader instance")
+            )
+        .subcommand(SubCommand::with_name("webapi")
+            .about("Web API endpoint")
             )
         .get_matches();
 
     let dbpath = args.value_of("dbpath").unwrap_or("db.json");
     let mut meta = db::load(dbpath);
-    println!("meta = {:#?}", meta);
 
-    if let Some(subargs) = args.subcommand_matches("download") {
-        let mut http = hyper::client::Client::new();
-        http.set_redirect_policy(hyper::client::RedirectPolicy::FollowAll);
-        http.set_read_timeout(Some(std::time::Duration::new(5, 0)));
+    let mut http = hyper::client::Client::new();
+    http.set_redirect_policy(hyper::client::RedirectPolicy::FollowAll);
+    http.set_read_timeout(Some(std::time::Duration::new(5, 0)));
 
+    if let Some(subargs) = args.subcommand_matches("add") {
+        for url in subargs.values_of("url").unwrap() {
+            db::add(&mut meta, &url, &http);
+        }
+    } else if let Some(subargs) = args.subcommand_matches("download") {
+        // XXX
+    } else if let Some(subargs) = args.subcommand_matches("prune") {
+        for n in subargs.values_of("id").unwrap() {
+            meta[n.parse::<usize>().unwrap()].pruned = true;
+        }
+    } else if let Some(subargs) = args.subcommand_matches("sync") {
+        // XXX
+    } else if let Some(subargs) = args.subcommand_matches("webapi") {
         // XXX
     } else {
         println!("You must specify a subcommand! (try \"help\")");
         std::process::exit(1);
     }
 
-    let mut http = hyper::client::Client::new();
-
-    http.set_redirect_policy(hyper::client::RedirectPolicy::FollowAll);
-    http.set_read_timeout(Some(std::time::Duration::new(5, 0)));
-
-    let id = "1677";
-
-    match parse::Hpffa::get_info(&http, id) {
-        None => println!("Story is not valid, or hpffa is down."),
-        Some(story) => {
-            let url = parse::Hpffa::get_url(id);
-            let mut chapters = Vec::<parse::ChapterInfo>::new();
-            for n in 1 .. story.chapters+1 {
-                chapters.push(parse::Hpffa::get_chapter(&http, id, n).unwrap());
-            }
-            print!("{}", fb2::compile(&url, &story, &chapters));
-        },
-    }
+    db::save(dbpath, &meta);
 }
