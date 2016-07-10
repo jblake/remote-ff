@@ -38,7 +38,7 @@ impl Site for Hpffa {
             title: title.to_string(),
             author: author.to_string(),
             chapters: chapters.parse::<u32>().unwrap(),
-            updated: time::strptime(*&updated, "%B %d, %Y").unwrap(),
+            updated: time::strptime(*&updated, "%B %d, %Y").unwrap().to_timespec().sec,
         });
     }
 

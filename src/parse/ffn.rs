@@ -3,7 +3,6 @@ use parse::*;
 use sanitize::*;
 use scraper::{Html, Selector};
 use std::io::Read;
-use time;
 
 pub struct Ffn { }
 
@@ -45,7 +44,7 @@ impl Site for Ffn {
             title: title.to_string(),
             author: author.to_string(),
             chapters: chapters.parse::<u32>().unwrap(),
-            updated: time::strptime(updated.or(published).unwrap(), "%s").unwrap(),
+            updated: updated.or(published).unwrap().parse::<i64>().unwrap(),
         });
     }
 

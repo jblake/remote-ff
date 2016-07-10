@@ -1,5 +1,5 @@
-extern crate hyper;
-extern crate time;
+use hyper;
+use time;
 
 mod ffn;
 mod hpffa;
@@ -7,13 +7,15 @@ mod hpffa;
 pub use self::ffn::*;
 pub use self::hpffa::*;
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq, RustcDecodable, RustcEncodable)]
 pub struct StoryInfo {
     pub title: String,
     pub author: String,
     pub chapters: u32,
-    pub updated: time::Tm,
+    pub updated: i64,
 }
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ChapterInfo {
     pub title: String,
     pub content: String,

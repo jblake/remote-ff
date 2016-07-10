@@ -4,7 +4,9 @@ version = "3.0.0"
 authors = ["Julian Blake Kongslie <jblake@jblake.org>"]
 
 [dependencies]
+clap = "*"
 hyper = "*"
 marksman_escape = "*"
+rustc-serialize = "*"
 scraper = "*"
 time = "*"
