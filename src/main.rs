@@ -80,15 +80,15 @@ fn main() {
         for url in subargs.values_of("url").unwrap() {
             db::add(&mut meta, &url, &http);
         }
-    } else if let Some(subargs) = args.subcommand_matches("download") {
+    } else if let Some(_) = args.subcommand_matches("download") {
         db::download(&mut meta, args.value_of("fb2path").unwrap_or("books"), &http);
     } else if let Some(subargs) = args.subcommand_matches("prune") {
         for n in subargs.values_of("id").unwrap() {
             meta[n.parse::<usize>().unwrap()].pruned = true;
         }
-    } else if let Some(subargs) = args.subcommand_matches("sync") {
+    } else if let Some(_) = args.subcommand_matches("sync") {
         // XXX
-    } else if let Some(subargs) = args.subcommand_matches("webapi") {
+    } else if let Some(_) = args.subcommand_matches("webapi") {
         // XXX
     } else {
         println!("You must specify a subcommand! (try \"help\")");
