@@ -59,7 +59,7 @@ fn main() {
             )
         .subcommand(SubCommand::with_name("sync")
             .about("Synchronize with a moonreader instance")
-            .arg(Arg::with_name("mrpath")
+            .arg(Arg::with_name("peer")
                  .required(true)
                  .takes_value(true)
                  .value_name("MOUNTPOINT")
@@ -88,8 +88,8 @@ fn main() {
         for n in subargs.values_of("id").unwrap() {
             meta[n.parse::<usize>().unwrap()].pruned = true;
         }
-    } else if let Some(_) = args.subcommand_matches("sync") {
-        // XXX
+    } else if let Some(subargs) = args.subcommand_matches("sync") {
+        db::sync(&meta, args.value_of("fb2path").unwrap_or("books"), subargs.value_of("peer").unwrap());
     } else if let Some(_) = args.subcommand_matches("webapi") {
         // XXX
     } else {

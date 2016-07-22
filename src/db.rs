@@ -1,9 +1,11 @@
 use hyper::client::Client;
 use parse::*;
 use regex::Regex;
+use rusqlite;
 use rustc_serialize::json;
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
 use std;
 
 #[derive(Clone, Debug, Hash, Eq, Ord, PartialEq, PartialOrd, RustcDecodable, RustcEncodable)]
@@ -38,9 +40,9 @@ pub fn save(path: &str, data: &Vec<Metadata>) {
 
 pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) {
     lazy_static! {
-        static ref INVALID_PATH_ELEMENTS: Regex = Regex::new(r"[^a-zA-Z0-9]+").unwrap();
-        static ref UNDERSCORE_PREFIX: Regex = Regex::new(r"^_+").unwrap();
-        static ref UNDERSCORE_SUFFIX: Regex = Regex::new(r"_+$").unwrap();
+        static ref INVALID_PATH_ELEMENTS : Regex = Regex::new(r"[^a-zA-Z0-9]+").unwrap();
+        static ref UNDERSCORE_PREFIX : Regex = Regex::new(r"^_+").unwrap();
+        static ref UNDERSCORE_SUFFIX : Regex = Regex::new(r"_+$").unwrap();
     }
     if let Some(id) = Ffn::recognize(url) {
         for entry in db.iter() {
@@ -92,12 +94,12 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
         .recursive(true)
         .create(fb2path)
         .unwrap();
+    let fb2path = Path::new(fb2path);
     for entry in db.iter_mut() {
-        let path = std::path::Path::new(fb2path);
-        let path = path.join(&*entry.filename);
+        let path = fb2path.join(&*entry.filename);
         if entry.pruned {
             // Ignoring result of remove_file because e.g. the file may already not exist.
-            let _ = std::fs::remove_file(path.to_str().unwrap());
+            let _ = std::fs::remove_file(&path);
             continue;
         }
         let info = match entry.site {
@@ -122,5 +124,48 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
         } else {
             println!("Could not download info for {}", entry.filename);
         }
-    };
+    }
+}
+
+pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
+    let peerdbpath = Path::new(peer).join("data/data/com.flyersoft.moonreaderp/databases/mrbooks.db");
+    let peerfb2path = Path::new(peer).join("storage/emulated/0/Books");
+    let peerprefix = Path::new("/sdcard/Books");
+    let fb2path = Path::new(fb2path);
+    let peerdb = rusqlite::Connection::open(peerdbpath).unwrap();
+    for entry in db.iter() {
+        let peerpath = peerfb2path.join(&*entry.filename);
+        let selfpath = fb2path.join(&*entry.filename);
+        let sqlpath = peerprefix.join(&*entry.filename);
+        let sqlpathstr = sqlpath.to_str().unwrap().to_string();
+        let sqlpathlstr = sqlpathstr.to_lowercase();
+        let timestr = format!("{}", entry.info.updated);
+        let urlstr = match entry.site {
+            Sitename::Ffn => Ffn::get_url(&*entry.id),
+            Sitename::Hpffa => Hpffa::get_url(&*entry.id),
+        };
+        if entry.pruned {
+            // Ignoring result of remove_file because e.g. the file may already not exist.
+            if let Ok(_) = std::fs::remove_file(&peerpath) {
+                peerdb.execute("DELETE FROM books WHERE lowerFilename = ?", &[&sqlpathlstr]).unwrap();
+                println!("Pruned {}", entry.filename);
+            }
+        } else {
+            let mut stmt = peerdb.prepare("SELECT addTime FROM books WHERE lowerFilename = ?").unwrap();
+            let mut rows = stmt.query(&[&sqlpathlstr]).unwrap();
+            if let Some(row) = rows.next() {
+                let timestring : String = row.unwrap().get(0);
+                let time : i64 = timestring.parse().unwrap();
+                if time < entry.info.updated {
+                    std::fs::copy(&selfpath, &peerpath).unwrap();
+                    peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                    println!("Updated {}", entry.filename);
+                }
+            } else {
+                std::fs::copy(&selfpath, &peerpath).unwrap();
+                peerdb.execute("INSERT INTO books (book, filename, lowerFilename, author, description, category, thumbFile, coverFile, addTime, favorite, downloadUrl, rate, bak1, bak2) values (?, ?, ?, ?, '', '', '', '', ?, 'default_fav', ?, '', '', '')", &[&entry.info.title, &sqlpathstr, &sqlpathlstr, &entry.info.author, &timestr, &urlstr]).unwrap();
+                println!("Created {}", entry.filename);
+            }
+        }
+    }
 }
