@@ -3,7 +3,9 @@ extern crate hyper;
 #[macro_use] extern crate lazy_static;
 extern crate marksman_escape;
 extern crate regex;
+extern crate rusqlite;
 extern crate rustc_serialize;
+extern crate rustful;
 extern crate scraper;
 extern crate time;
 
