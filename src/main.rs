@@ -57,6 +57,12 @@ fn main() {
             )
         .subcommand(SubCommand::with_name("sync")
             .about("Synchronize with a moonreader instance")
+            .arg(Arg::with_name("mrpath")
+                 .required(true)
+                 .takes_value(true)
+                 .value_name("MOUNTPOINT")
+                 .help("Mountpoint of your android device's filesystem root")
+                 )
             )
         .subcommand(SubCommand::with_name("webapi")
             .about("Web API endpoint")
@@ -75,7 +81,7 @@ fn main() {
             db::add(&mut meta, &url, &http);
         }
     } else if let Some(subargs) = args.subcommand_matches("download") {
-        // XXX
+        db::download(&mut meta, args.value_of("fb2path").unwrap_or("books"), &http);
     } else if let Some(subargs) = args.subcommand_matches("prune") {
         for n in subargs.values_of("id").unwrap() {
             meta[n.parse::<usize>().unwrap()].pruned = true;

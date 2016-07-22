@@ -36,14 +36,16 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                     },
                     "hr" => {
                         if inp {
-                            buf.push_str("</p>\n<empty-line/>\n<p>");
+                            //buf.push_str("</p>\n<empty-line/>\n<p>");
+                            buf.push_str("<!-- bad hr inside p -->");
                         } else {
                             buf.push_str("<empty-line/>\n");
                         }
                     },
                     "br" => {
                         if inp {
-                            buf.push_str("</p>\n<empty-line/>\n<p>");
+                            //buf.push_str("</p>\n<empty-line/>\n<p>");
+                            buf.push_str("<!-- bad br inside p -->");
                         } else {
                             buf.push_str("<empty-line/>\n");
                         }

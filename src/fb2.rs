@@ -9,7 +9,7 @@ pub fn compile(url: &str, story: &parse::StoryInfo, chapters: &Vec<parse::Chapte
     fb2.push_str(&*String::from_utf8(Escape::new(story.author.bytes()).collect()).unwrap());
     fb2.push_str("</nickname></author>\n<book-title>");
     fb2.push_str(&*String::from_utf8(Escape::new(story.title.bytes()).collect()).unwrap());
-    fb2.push_str("</book_title>\n<date>");
+    fb2.push_str("</book-title>\n<date>");
     fb2.push_str(&*String::from_utf8(Escape::new(time::strftime("%Y-%m-%d %H:%M:%S UTC", &updated).unwrap().bytes()).collect()).unwrap());
     fb2.push_str("</date>\n</title-info>\n<document-info>\n<author><nickname>jblake</nickname></author>\n<date>");
     fb2.push_str(&*String::from_utf8(Escape::new(time::strftime("%Y-%m-%d %H:%M:%S UTC", &now).unwrap().bytes()).collect()).unwrap());

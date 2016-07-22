@@ -24,8 +24,6 @@ impl Site for Ffn {
     fn get_url(id: &str) -> String { format!("https://m.fanfiction.net/s/{}", id) }
 
     fn get_info(client: &hyper::client::Client, id: &str) -> Option<StoryInfo> {
-        println!("Fetching info for ffn:{}", id);
-
         let url = format!("https://m.fanfiction.net/s/{}", id);
         let mut res = client.get(&url).send().unwrap();
         if res.status != hyper::Ok {
@@ -63,8 +61,6 @@ impl Site for Ffn {
     }
 
     fn get_chapter(client: &hyper::client::Client, id: &str, chapter: u32) -> Option<ChapterInfo> {
-        println!("Fetching chapter ffn:{}:{}", id, chapter);
-
         let url = format!("https://m.fanfiction.net/s/{}/{}", id, chapter);
         let mut res = client.get(&url).send().unwrap();
         if res.status != hyper::Ok {

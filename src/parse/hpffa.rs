@@ -25,8 +25,6 @@ impl Site for Hpffa {
     fn get_url(id: &str) -> String { format!("http://www.hpfanficarchive.com/stories/viewstory.php?sid={}", id) }
 
     fn get_info(client: &hyper::client::Client, id: &str) -> Option<StoryInfo> {
-        println!("Fetching info for hpffa:{}", id);
-
         let url = format!("http://www.hpfanficarchive.com/stories/viewstory.php?action=printable&sid={}", id);
         let mut res = client.get(&url).send().unwrap();
         if res.status != hyper::Ok {
@@ -57,8 +55,6 @@ impl Site for Hpffa {
     }
 
     fn get_chapter(client: &hyper::client::Client, id: &str, chapter: u32) -> Option<ChapterInfo> {
-        println!("Fetching chapter hpffa:{}:{}", id, chapter);
-
         let url = format!("http://www.hpfanficarchive.com/stories/viewstory.php?action=printable&sid={}&chapter={}", id, chapter);
         let mut res = client.get(&url).send().unwrap();
         if res.status != hyper::Ok {
