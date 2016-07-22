@@ -145,7 +145,6 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
             Sitename::Hpffa => Hpffa::get_url(&*entry.id),
         };
         if entry.pruned {
-            // Ignoring result of remove_file because e.g. the file may already not exist.
             if let Ok(_) = std::fs::remove_file(&peerpath) {
                 peerdb.execute("DELETE FROM books WHERE lowerFilename = ?", &[&sqlpathlstr]).unwrap();
                 println!("Pruned {}", entry.filename);
