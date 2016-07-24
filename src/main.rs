@@ -1,4 +1,5 @@
 extern crate clap;
+extern crate filetime;
 extern crate hyper;
 #[macro_use] extern crate lazy_static;
 extern crate marksman_escape;
@@ -15,6 +16,7 @@ mod sanitize;
 mod parse;
 
 use clap::{App,Arg,SubCommand};
+use parse::Site;
 
 fn main() {
     let args = App::new("remote-ff")
@@ -46,6 +48,15 @@ fn main() {
             )
         .subcommand(SubCommand::with_name("download")
             .about("Check for updates and rebuild .fb2 files")
+            )
+        .subcommand(SubCommand::with_name("import")
+            .about("Import from old version of remote-ff")
+            .arg(Arg::with_name("olddb")
+                 .required(true)
+                 .takes_value(true)
+                 .value_name("DB")
+                 .help("Database file from the old remote-ff")
+                 )
             )
         .subcommand(SubCommand::with_name("prune")
             .about("Stop checking for updates for an ebook")
@@ -80,10 +91,30 @@ fn main() {
 
     if let Some(subargs) = args.subcommand_matches("add") {
         for url in subargs.values_of("url").unwrap() {
-            db::add(&mut meta, &url, &http);
+            if db::add(&mut meta, &url, &http) {
+                db::save(dbpath, &meta);
+            }
         }
     } else if let Some(_) = args.subcommand_matches("download") {
         db::download(&mut meta, args.value_of("fb2path").unwrap_or("books"), &http);
+    } else if let Some(subargs) = args.subcommand_matches("import") {
+        let db = rusqlite::Connection::open(subargs.value_of("olddb").unwrap()).unwrap();
+        let mut stmt = db.prepare("SELECT site, ref FROM story WHERE NOT pruned").unwrap();
+        let mut rows = stmt.query(&[]).unwrap();
+        while let Some(row) = rows.next() {
+            let r = row.unwrap();
+            let site : String = r.get(0);
+            let id : String = r.get(1);
+            let url = match &*site {
+                "ArchiveOfOurOwn" => parse::Aooo::get_url(&*id),
+                "FanfictionNet" => parse::Ffn::get_url(&*id),
+                "HpfanficarchiveCom" => parse::Hpffa::get_url(&*id),
+                x => panic!("Unrecognized site: {}", x),
+            };
+            if db::add(&mut meta, &*url, &http) {
+               db::save(dbpath, &meta);
+            }
+        }
     } else if let Some(subargs) = args.subcommand_matches("prune") {
         for n in subargs.values_of("id").unwrap() {
             meta[n.parse::<usize>().unwrap()].pruned = true;

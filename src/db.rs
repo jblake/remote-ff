@@ -1,3 +1,4 @@
+use filetime;
 use hyper::client::Client;
 use parse::*;
 use regex::Regex;
@@ -10,6 +11,7 @@ use std;
 
 #[derive(Clone, Debug, Hash, Eq, Ord, PartialEq, PartialOrd, RustcDecodable, RustcEncodable)]
 pub enum Sitename {
+    Aooo,
     Ffn,
     Hpffa,
 }
@@ -34,20 +36,46 @@ pub fn load(path: &str) -> Vec<Metadata> {
 }
 
 pub fn save(path: &str, data: &Vec<Metadata>) {
-    let mut fh = File::create(path).unwrap();
-    fh.write_all(json::encode(data).unwrap().as_bytes()).unwrap();
+    let tmp = format!("{}.tmp", path);
+    {
+        let mut fh = File::create(&*tmp).unwrap();
+        fh.write_all(json::encode(data).unwrap().as_bytes()).unwrap();
+    }
+    std::fs::rename(&*tmp, path).unwrap();
 }
 
-pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) {
+pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) -> bool {
     lazy_static! {
         static ref INVALID_PATH_ELEMENTS : Regex = Regex::new(r"[^a-zA-Z0-9]+").unwrap();
         static ref UNDERSCORE_PREFIX : Regex = Regex::new(r"^_+").unwrap();
         static ref UNDERSCORE_SUFFIX : Regex = Regex::new(r"_+$").unwrap();
     }
-    if let Some(id) = Ffn::recognize(url) {
+    if let Some(id) = Aooo::recognize(url) {
+        for entry in db.iter() {
+            if entry.site == Sitename::Aooo && entry.id == id {
+                return false;
+            }
+        }
+        if let Some(info) = Aooo::get_info(client, &*id) {
+            let filetitle = UNDERSCORE_PREFIX.replace_all(&*UNDERSCORE_SUFFIX.replace_all(&*INVALID_PATH_ELEMENTS.replace_all(&*info.title, "_"), ""), "");
+            let fileauthor = UNDERSCORE_PREFIX.replace_all(&*UNDERSCORE_SUFFIX.replace_all(&*INVALID_PATH_ELEMENTS.replace_all(&*info.author, "_"), ""), "");
+            let filename = format!("{}.aooo{}.{}.{}.fb2", db.len(), id, filetitle, fileauthor);
+            db.push(Metadata {
+                site: Sitename::Aooo,
+                id: id.to_string(),
+                info: info,
+                pruned: false,
+                filename: filename,
+            });
+            return true;
+        } else {
+            println!("Recognized URL as Aooo, but could not retrieve metadata: {}", url);
+            return false;
+        }
+    } else if let Some(id) = Ffn::recognize(url) {
         for entry in db.iter() {
             if entry.site == Sitename::Ffn && entry.id == id {
-                return;
+                return false;
             }
         }
         if let Some(info) = Ffn::get_info(client, &*id) {
@@ -61,13 +89,15 @@ pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) {
                 pruned: false,
                 filename: filename,
             });
+            return true;
         } else {
             println!("Recognized URL as Ffn, but could not retrieve metadata: {}", url);
+            return false;
         }
     } else if let Some(id) = Hpffa::recognize(url) {
         for entry in db.iter() {
             if entry.site == Sitename::Hpffa && entry.id == id {
-                return;
+                return false;
             }
         }
         if let Some(info) = Hpffa::get_info(client, &*id) {
@@ -81,11 +111,14 @@ pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) {
                 pruned: false,
                 filename: filename,
             });
+            return true;
         } else {
             println!("Recognized URL as Hpffa, but could not retrieve metadata: {}", url);
+            return false;
         }
     } else {
         println!("Did not recognize URL: {}", url);
+        return false;
     }
 }
 
@@ -102,19 +135,32 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
             let _ = std::fs::remove_file(&path);
             continue;
         }
-        let info = match entry.site {
+        let mut info = match entry.site {
+            Sitename::Aooo => Aooo::get_info(client, &*entry.id),
             Sitename::Ffn => Ffn::get_info(client, &*entry.id),
             Sitename::Hpffa => Hpffa::get_info(client, &*entry.id),
         };
+        if info == None {
+            info = match entry.site {
+                Sitename::Aooo => Aooo::get_info(client, &*entry.id),
+                Sitename::Ffn => Ffn::get_info(client, &*entry.id),
+                Sitename::Hpffa => Hpffa::get_info(client, &*entry.id),
+            };
+        }
         if let Some(info) = info {
             if info != entry.info || ! path.exists() {
                 let book = match entry.site {
+                    Sitename::Aooo => Aooo::compile(client, &*entry.id, &info),
                     Sitename::Ffn => Ffn::compile(client, &*entry.id, &info),
                     Sitename::Hpffa => Hpffa::compile(client, &*entry.id, &info),
                 };
                 if let Some(book) = book {
-                    let mut fh = File::create(path).unwrap();
-                    fh.write_all(book.as_bytes()).unwrap();
+                    {
+                        let mut fh = File::create(path.clone()).unwrap();
+                        fh.write_all(book.as_bytes()).unwrap();
+                    }
+                    let time = filetime::FileTime::from_seconds_since_1970(info.updated as u64, 0);
+                    filetime::set_file_times(path, time, time);
                     entry.info = info;
                     println!("Wrote new version of {}", entry.filename);
                 } else {
@@ -141,6 +187,7 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
         let sqlpathlstr = sqlpathstr.to_lowercase();
         let timestr = format!("{}", entry.info.updated);
         let urlstr = match entry.site {
+            Sitename::Aooo => Aooo::get_url(&*entry.id),
             Sitename::Ffn => Ffn::get_url(&*entry.id),
             Sitename::Hpffa => Hpffa::get_url(&*entry.id),
         };

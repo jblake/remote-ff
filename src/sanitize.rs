@@ -23,7 +23,35 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
             },
             &Node::Element(ref elem) => {
                 match elem.name() {
+                    "a" => {
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
+                    },
+                    "img" => {
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
+                    },
+                    "center" => {
+                        if inp {
+                            buf.push_str("</p>\n");
+                        }
+                        buf.push_str("<p>");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        buf.push_str("</p>\n");
+                        if inp {
+                            buf.push_str("<p>");
+                        }
+                    },
                     "p" => {
+                        if inp {
+                            buf.push_str("</p>\n");
+                        }
+                        buf.push_str("<p>");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        buf.push_str("</p>\n");
+                        if inp {
+                            buf.push_str("<p>");
+                        }
+                    },
+                    "li" => {
                         if inp {
                             buf.push_str("</p>\n");
                         }
@@ -104,6 +132,23 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                         if ! inp {
                             buf.push_str("</p>\n");
                         }
+                    },
+                    "u" => {
+                        if ! inp {
+                            buf.push_str("<p>");
+                        }
+                        buf.push_str("<strong><emphasis>");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        buf.push_str("</emphasis></strong>");
+                        if ! inp {
+                            buf.push_str("</p>\n");
+                        }
+                    },
+                    "ol" => {
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
+                    },
+                    "ul" => {
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
                     },
                     x => panic!("Unrecognized tag: {}\n{:#?}\n", x, elem),
                 }

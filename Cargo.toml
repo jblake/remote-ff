@@ -5,6 +5,7 @@ authors = ["Julian Blake Kongslie <jblake@jblake.org>"]
 
 [dependencies]
 clap = "*"
+filetime = "*"
 hyper = "*"
 lazy_static = "*"
 marksman_escape = "*"

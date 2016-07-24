@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -eux
+
+cd ~/remote-ff
+
+cargo run --release download

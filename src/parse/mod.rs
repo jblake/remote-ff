@@ -1,9 +1,11 @@
 use fb2;
 use hyper::client::Client;
 
+mod aooo;
 mod ffn;
 mod hpffa;
 
+pub use self::aooo::*;
 pub use self::ffn::*;
 pub use self::hpffa::*;
 
@@ -31,6 +33,8 @@ pub trait Site {
         let mut chapters = Vec::<ChapterInfo>::new();
         for c in 1 .. info.chapters {
             if let Some(chapter) = Self::get_chapter(client, id, c) {
+                chapters.push(chapter);
+            } else if let Some(chapter) = Self::get_chapter(client, id, c) {
                 chapters.push(chapter);
             } else {
                 return None;

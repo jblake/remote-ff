@@ -11,7 +11,7 @@ pub struct Hpffa { }
 impl Site for Hpffa {
     fn recognize(url: &str) -> Option<String> {
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"^http://www.hpfanficarchive.com/.*sid=(\d+)").unwrap();
+            static ref RE : Regex = Regex::new(r"^http://www.hpfanficarchive.com/.*sid=(\d+)").unwrap();
         }
         match RE.captures(url) {
             None => return None,
@@ -26,13 +26,17 @@ impl Site for Hpffa {
 
     fn get_info(client: &hyper::client::Client, id: &str) -> Option<StoryInfo> {
         let url = format!("http://www.hpfanficarchive.com/stories/viewstory.php?action=printable&sid={}", id);
-        let mut res = client.get(&url).send().unwrap();
+        let mut res = match client.get(&url).send() {
+            Ok(x) => x,
+            _ => return None,
+        };
         if res.status != hyper::Ok {
             return None;
         }
 
-        let mut html = String::new();
-        res.read_to_string(&mut html).unwrap();
+        let mut rawhtml = Vec::<u8>::new();
+        res.read_to_end(&mut rawhtml).unwrap();
+        let html = String::from_utf8_lossy(&rawhtml);
 
         let doc = Html::parse_document(&html);
 
@@ -56,13 +60,17 @@ impl Site for Hpffa {
 
     fn get_chapter(client: &hyper::client::Client, id: &str, chapter: u32) -> Option<ChapterInfo> {
         let url = format!("http://www.hpfanficarchive.com/stories/viewstory.php?action=printable&sid={}&chapter={}", id, chapter);
-        let mut res = client.get(&url).send().unwrap();
+        let mut res = match client.get(&url).send() {
+            Ok(x) => x,
+            _ => return None,
+        };
         if res.status != hyper::Ok {
             return None;
         }
 
-        let mut html = String::new();
-        res.read_to_string(&mut html).unwrap();
+        let mut rawhtml = Vec::<u8>::new();
+        res.read_to_end(&mut rawhtml).unwrap();
+        let html = String::from_utf8_lossy(&rawhtml);
 
         let doc = Html::parse_document(&html);
 
