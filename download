@@ -4,4 +4,4 @@ set -eux
 
 cd ~/remote-ff
 
-cargo run --release download
+time cargo run --release download

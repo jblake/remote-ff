@@ -8,12 +8,12 @@ fusermount -u peer > /dev/null 2>&1 || true
 
 mkdir -p peer
 
-until sshfs -C -p 22901 -o entry_timeout=600 -o attr_timeout=600 root@localhost:/ peer; do
+until sshfs -C -o entry_timeout=600 -o attr_timeout=600 tablet:/ peer; do
   sleep 0.1
 done
 
 ls -lR peer/storage/emulated/0/Books > /dev/null &
-ssh -p 22901 root@localhost "while pkill com.flyersoft.moonreaderp; do sleep 1; done" &
+ssh tablet "while pkill com.flyersoft.moonreaderp; do sleep 1; done" &
 
 wait
 
