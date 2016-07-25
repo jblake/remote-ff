@@ -22,5 +22,3 @@ wait
 time target/release/remote-ff sync peer || true
 
 fusermount -u peer > /dev/null 2>&1 || true
-
-rmdir peer
