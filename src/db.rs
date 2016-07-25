@@ -206,6 +206,18 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
                     std::fs::copy(&selfpath, &peerpath).unwrap();
                     peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
                     println!("Updated {}", entry.filename);
+                } else if ! peerpath.exists() {
+                    std::fs::copy(&selfpath, &peerpath).unwrap();
+                    peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                    println!("Restored missing {}", entry.filename);
+                } else {
+                    let peermeta = std::fs::metadata(&peerpath).unwrap();
+                    let selfmeta = std::fs::metadata(&selfpath).unwrap();
+                    if peermeta.len() != selfmeta.len() {
+                        std::fs::copy(&selfpath, &peerpath).unwrap();
+                        peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                        println!("Restored badlen {}", entry.filename);
+                    }
                 }
             } else {
                 std::fs::copy(&selfpath, &peerpath).unwrap();
