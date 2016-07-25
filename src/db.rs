@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std;
+use time;
 
 #[derive(Clone, Debug, Hash, Eq, Ord, PartialEq, PartialOrd, RustcDecodable, RustcEncodable)]
 pub enum Sitename {
@@ -123,6 +124,7 @@ pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) -> bool {
 }
 
 pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
+    let one_hour_ago = time::now_utc().to_timespec().sec - 3600;
     std::fs::DirBuilder::new()
         .recursive(true)
         .create(fb2path)
@@ -148,7 +150,7 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
             };
         }
         if let Some(info) = info {
-            if info != entry.info || ! path.exists() {
+            if ! path.exists() || (info != entry.info && info.updated < one_hour_ago){
                 let book = match entry.site {
                     Sitename::Aooo => Aooo::compile(client, &*entry.id, &info),
                     Sitename::Ffn => Ffn::compile(client, &*entry.id, &info),
