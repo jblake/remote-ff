@@ -31,7 +31,7 @@ pub trait Site {
 
     fn compile(client: &Client, id: &str, info: &StoryInfo) -> Option<String> {
         let mut chapters = Vec::<ChapterInfo>::new();
-        for c in 0 .. info.chapters {
+        for c in 1 .. info.chapters + 1 {
             if let Some(chapter) = Self::get_chapter(client, id, c) {
                 chapters.push(chapter);
             } else if let Some(chapter) = Self::get_chapter(client, id, c) {
