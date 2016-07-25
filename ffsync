@@ -4,6 +4,8 @@ set -eux
 
 cd ~/remote-ff
 
+cargo build --release
+
 fusermount -u peer > /dev/null 2>&1 || true
 
 mkdir -p peer
@@ -17,7 +19,7 @@ ssh tablet "while pkill com.flyersoft.moonreaderp; do sleep 1; done" &
 
 wait
 
-cargo run --release sync peer || true
+target/release/remote-ff sync peer || true
 
 fusermount -u peer > /dev/null 2>&1 || true
 

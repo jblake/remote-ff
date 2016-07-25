@@ -178,8 +178,11 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
     let peerfb2path = Path::new(peer).join("storage/emulated/0/Books");
     let peerprefix = Path::new("/sdcard/Books");
     let fb2path = Path::new(fb2path);
+    println!("Opening peer database...");
     let peerdb = rusqlite::Connection::open(peerdbpath).unwrap();
+    println!("Scanning entries...");
     for entry in db.iter() {
+        print!(".");
         let peerpath = peerfb2path.join(&*entry.filename);
         let selfpath = fb2path.join(&*entry.filename);
         let sqlpath = peerprefix.join(&*entry.filename);
@@ -194,7 +197,7 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
         if entry.pruned {
             if let Ok(_) = std::fs::remove_file(&peerpath) {
                 peerdb.execute("DELETE FROM books WHERE lowerFilename = ?", &[&sqlpathlstr]).unwrap();
-                println!("Pruned {}", entry.filename);
+                println!("\nPruned {}", entry.filename);
             }
         } else {
             let mut stmt = peerdb.prepare("SELECT addTime FROM books WHERE lowerFilename = ?").unwrap();
@@ -205,24 +208,24 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
                 if time < entry.info.updated {
                     std::fs::copy(&selfpath, &peerpath).unwrap();
                     peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
-                    println!("Updated {}", entry.filename);
+                    println!("\nUpdated {}", entry.filename);
                 } else if ! peerpath.exists() {
                     std::fs::copy(&selfpath, &peerpath).unwrap();
                     peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
-                    println!("Restored missing {}", entry.filename);
+                    println!("\nRestored missing {}", entry.filename);
                 } else {
                     let peermeta = std::fs::metadata(&peerpath).unwrap();
                     let selfmeta = std::fs::metadata(&selfpath).unwrap();
                     if peermeta.len() != selfmeta.len() {
                         std::fs::copy(&selfpath, &peerpath).unwrap();
                         peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
-                        println!("Restored badlen {}", entry.filename);
+                        println!("\nRestored badlen {}", entry.filename);
                     }
                 }
             } else {
                 std::fs::copy(&selfpath, &peerpath).unwrap();
                 peerdb.execute("INSERT INTO books (book, filename, lowerFilename, author, description, category, thumbFile, coverFile, addTime, favorite, downloadUrl, rate, bak1, bak2) values (?, ?, ?, ?, '', '', '', '', ?, 'default_fav', ?, '', '', '')", &[&entry.info.title, &sqlpathstr, &sqlpathlstr, &entry.info.author, &timestr, &urlstr]).unwrap();
-                println!("Created {}", entry.filename);
+                println!("\nCreated {}", entry.filename);
             }
         }
     }
