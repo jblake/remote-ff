@@ -4,6 +4,8 @@ set -eux
 
 cd ~/remote-ff
 
+fusermount -u peer > /dev/null 2>&1 || true
+
 cargo build --release
 
 time target/release/remote-ff download
