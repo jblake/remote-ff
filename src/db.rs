@@ -206,7 +206,7 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
             if let Some(row) = rows.next() {
                 let timestring : String = row.unwrap().get(0);
                 let time : i64 = timestring.parse().unwrap();
-                if time < entry.info.updated {
+                if time != entry.info.updated {
                     println!("Updating {}", entry.filename);
                     std::fs::copy(&selfpath, &peerpath).unwrap();
                     peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
