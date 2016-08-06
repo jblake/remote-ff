@@ -208,25 +208,37 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
                 let time : i64 = timestring.parse().unwrap();
                 if time != entry.info.updated {
                     println!("Updating {}", entry.filename);
-                    std::fs::copy(&selfpath, &peerpath).unwrap();
-                    peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                    if let Ok(_) = std::fs::copy(&selfpath, &peerpath) {
+                        peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                    } else {
+                        println!("\tCopy failed.");
+                    }
                 } else if ! peerpath.exists() {
                     println!("Restore missing {}", entry.filename);
-                    std::fs::copy(&selfpath, &peerpath).unwrap();
-                    peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                    if let Ok(_) = std::fs::copy(&selfpath, &peerpath) {
+                        peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                    } else {
+                        println!("\tCopy failed.");
+                    }
                 } else {
                     let peermeta = std::fs::metadata(&peerpath).unwrap();
                     let selfmeta = std::fs::metadata(&selfpath).unwrap();
                     if peermeta.len() != selfmeta.len() {
                         println!("Restore badlen {}", entry.filename);
-                        std::fs::copy(&selfpath, &peerpath).unwrap();
-                        peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                        if let Ok(_) = std::fs::copy(&selfpath, &peerpath) {
+                            peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                        } else {
+                            println!("\tCopy failed.");
+                        }
                     }
                 }
             } else {
                 println!("Create {}", entry.filename);
-                std::fs::copy(&selfpath, &peerpath).unwrap();
-                peerdb.execute("INSERT INTO books (book, filename, lowerFilename, author, description, category, thumbFile, coverFile, addTime, favorite, downloadUrl, rate, bak1, bak2) values (?, ?, ?, ?, '', '', '', '', ?, 'default_fav', ?, '', '', '')", &[&entry.info.title, &sqlpathstr, &sqlpathlstr, &entry.info.author, &timestr, &urlstr]).unwrap();
+                if let Ok(_) = std::fs::copy(&selfpath, &peerpath) {
+                    peerdb.execute("INSERT INTO books (book, filename, lowerFilename, author, description, category, thumbFile, coverFile, addTime, favorite, downloadUrl, rate, bak1, bak2) values (?, ?, ?, ?, '', '', '', '', ?, 'default_fav', ?, '', '', '')", &[&entry.info.title, &sqlpathstr, &sqlpathlstr, &entry.info.author, &timestr, &urlstr]).unwrap();
+                } else {
+                    println!("\tCopy failed.");
+                }
             }
         }
     }
