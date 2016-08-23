@@ -51,6 +51,17 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                             buf.push_str("<p>");
                         }
                     },
+                    "blockquote" => {
+                        if inp {
+                            buf.push_str("</p>\n");
+                        }
+                        buf.push_str("<p>");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        buf.push_str("</p>\n");
+                        if inp {
+                            buf.push_str("<p>");
+                        }
+                    },
                     "li" => {
                         if inp {
                             buf.push_str("</p>\n");
