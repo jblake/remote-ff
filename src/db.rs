@@ -162,7 +162,7 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
                         fh.write_all(book.as_bytes()).unwrap();
                     }
                     let time = filetime::FileTime::from_seconds_since_1970(info.updated as u64, 0);
-                    filetime::set_file_times(path, time, time);
+                    let _ = filetime::set_file_times(path, time, time);
                     entry.info = info;
                     println!("Wrote new version of {}", entry.filename);
                 } else {
@@ -190,6 +190,7 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
         let sqlpathstr = sqlpath.to_str().unwrap().to_string();
         let sqlpathlstr = sqlpathstr.to_lowercase();
         let timestr = format!("{}", entry.info.updated);
+        let timeimpl = filetime::FileTime::from_seconds_since_1970(entry.info.updated as u64, 0);
         let urlstr = match entry.site {
             Sitename::Aooo => Aooo::get_url(&*entry.id),
             Sitename::Ffn => Ffn::get_url(&*entry.id),
@@ -240,6 +241,7 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
                     println!("\tCopy failed.");
                 }
             }
+            let _ = filetime::set_file_times(peerpath, timeimpl, timeimpl);
         }
     }
 }
