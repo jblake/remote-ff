@@ -1,8 +1,27 @@
 use marksman_escape::Escape;
 use scraper::element_ref::ElementRef;
 use scraper::node::Node;
+use std::collections::VecDeque;
 
-fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
+fn newp(buf: &mut String, inp: bool, formatting: &VecDeque<&str>) {
+    for node in formatting.iter().rev() {
+        buf.push_str("</");
+        buf.push_str(*node);
+        buf.push_str(">");
+    }
+    if inp {
+        buf.push_str("</p>\n");
+    }
+    buf.push_str("<p>");
+    for node in formatting.iter() {
+        buf.push_str("<");
+        buf.push_str(*node);
+        buf.push_str(">");
+    }
+}
+
+fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool, formatting: &mut VecDeque<&str>) {
+    assert!(inp || formatting.is_empty(), "Non-empty formatting table without being inside paragraph: inp={:?} {:?}", inp, formatting);
     for node in root.children() {
         match node.value() {
             &Node::Document => panic!("unexpected document"),
@@ -18,83 +37,75 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                     buf.push_str(&*String::from_utf8(Escape::new(text.bytes()).collect()).unwrap());
                 }
                 if !blank && !inp {
-                    buf.push_str("</p>");
+                    buf.push_str("</p>\n");
                 }
             },
             &Node::Element(ref elem) => {
                 match elem.name() {
                     "a" => {
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp, formatting);
                     },
                     "img" => {
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp, formatting);
                     },
                     "center" => {
-                        if inp {
+                        newp(buf, inp, formatting);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        if !inp {
                             buf.push_str("</p>\n");
-                        }
-                        buf.push_str("<p>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
-                        buf.push_str("</p>\n");
-                        if inp {
-                            buf.push_str("<p>");
                         }
                     },
                     "p" => {
-                        if inp {
+                        newp(buf, inp, formatting);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        if !inp {
                             buf.push_str("</p>\n");
-                        }
-                        buf.push_str("<p>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
-                        buf.push_str("</p>\n");
-                        if inp {
-                            buf.push_str("<p>");
                         }
                     },
                     "blockquote" => {
-                        if inp {
+                        newp(buf, inp, formatting);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        if !inp {
                             buf.push_str("</p>\n");
-                        }
-                        buf.push_str("<p>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
-                        buf.push_str("</p>\n");
-                        if inp {
-                            buf.push_str("<p>");
                         }
                     },
                     "li" => {
-                        if inp {
+                        newp(buf, inp, formatting);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        if !inp {
                             buf.push_str("</p>\n");
-                        }
-                        buf.push_str("<p>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
-                        buf.push_str("</p>\n");
-                        if inp {
-                            buf.push_str("<p>");
                         }
                     },
                     "hr" => {
+                        for node in formatting.iter().rev() {
+                            buf.push_str("</");
+                            buf.push_str(*node);
+                            buf.push_str(">");
+                        }
                         if inp {
-                            //buf.push_str("</p>\n<empty-line/>\n<p>");
-                            buf.push_str("<!-- bad hr inside p -->");
-                        } else {
-                            buf.push_str("<empty-line/>\n");
+                            buf.push_str("</p>\n");
+                        }
+                        buf.push_str("<empty-line/>\n");
+                        if inp {
+                            buf.push_str("<p>");
+                        }
+                        for node in formatting.iter().rev() {
+                            buf.push_str("<");
+                            buf.push_str(*node);
+                            buf.push_str(">");
                         }
                     },
                     "br" => {
-                        if inp {
-                            //buf.push_str("</p>\n<empty-line/>\n<p>");
-                            buf.push_str("<!-- bad br inside p -->");
-                        } else {
-                            buf.push_str("<empty-line/>\n");
-                        }
+                        newp(buf, inp, formatting);
                     },
                     "b" => {
                         if ! inp {
                             buf.push_str("<p>");
                         }
                         buf.push_str("<strong>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        formatting.push_back("strong");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        formatting.pop_back();
                         buf.push_str("</strong>");
                         if ! inp {
                             buf.push_str("</p>\n");
@@ -105,7 +116,9 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                             buf.push_str("<p>");
                         }
                         buf.push_str("<strong>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        formatting.push_back("strong");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        formatting.pop_back();
                         buf.push_str("</strong>");
                         if ! inp {
                             buf.push_str("</p>\n");
@@ -116,7 +129,9 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                             buf.push_str("<p>");
                         }
                         buf.push_str("<emphasis>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        formatting.push_back("emphasis");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        formatting.pop_back();;
                         buf.push_str("</emphasis>");
                         if ! inp {
                             buf.push_str("</p>\n");
@@ -127,7 +142,9 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                             buf.push_str("<p>");
                         }
                         buf.push_str("<emphasis>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        formatting.push_back("emphasis");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        formatting.pop_back();
                         buf.push_str("</emphasis>");
                         if ! inp {
                             buf.push_str("</p>\n");
@@ -138,7 +155,11 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                             buf.push_str("<p>");
                         }
                         buf.push_str("<strong><emphasis>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        formatting.push_back("strong");
+                        formatting.push_back("emphasis");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        formatting.pop_back();
+                        formatting.pop_back();
                         buf.push_str("</emphasis></strong>");
                         if ! inp {
                             buf.push_str("</p>\n");
@@ -149,17 +170,21 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
                             buf.push_str("<p>");
                         }
                         buf.push_str("<strong><emphasis>");
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true);
+                        formatting.push_back("strong");
+                        formatting.push_back("emphasis");
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, true, formatting);
+                        formatting.pop_back();
+                        formatting.pop_back();
                         buf.push_str("</emphasis></strong>");
                         if ! inp {
                             buf.push_str("</p>\n");
                         }
                     },
                     "ol" => {
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp, formatting);
                     },
                     "ul" => {
-                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp);
+                        sanitize_into(&ElementRef::wrap(node).unwrap(), buf, inp, formatting);
                     },
                     x => panic!("Unrecognized tag: {}\n{:#?}\n", x, elem),
                 }
@@ -170,6 +195,8 @@ fn sanitize_into(root: &ElementRef, buf: &mut String, inp: bool) {
 
 pub fn sanitize(root: &ElementRef) -> String {
     let mut buf = String::new();
-    sanitize_into(root, &mut buf, false);
+    let mut formatting = VecDeque::new();
+    sanitize_into(root, &mut buf, false, &mut formatting);
+    assert!(formatting.is_empty(), "Somehow wound up with nonempty formatting stack: {:?}", formatting);
     return buf;
 }
