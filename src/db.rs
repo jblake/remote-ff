@@ -10,7 +10,7 @@ use std::path::Path;
 use std;
 use time;
 
-#[derive(Clone, Debug, Hash, Eq, Ord, PartialEq, PartialOrd, RustcDecodable, RustcEncodable)]
+#[derive(Clone, Copy, Debug, Hash, Eq, Ord, PartialEq, PartialOrd, RustcDecodable, RustcEncodable)]
 pub enum Sitename {
     Aooo,
     Ffn,
