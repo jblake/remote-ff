@@ -58,8 +58,18 @@ fn main() {
                  .help("Database file from the old remote-ff")
                  )
             )
-        .subcommand(SubCommand::with_name("prune")
+        .subcommand(SubCommand::with_name("missing")
             .about("Stop checking for updates for an ebook")
+            .arg(Arg::with_name("id")
+                 .required(true)
+                 .multiple(true)
+                 .takes_value(true)
+                 .value_name("ID")
+                 .help("Story ID to stop checking")
+                 )
+            )
+        .subcommand(SubCommand::with_name("prune")
+            .about("Remove ebook from archive and tablet")
             .arg(Arg::with_name("id")
                  .required(true)
                  .multiple(true)
@@ -114,6 +124,10 @@ fn main() {
             if db::add(&mut meta, &*url, &http) {
                db::save(dbpath, &meta);
             }
+        }
+    } else if let Some(subargs) = args.subcommand_matches("missing") {
+        for n in subargs.values_of("id").unwrap() {
+            meta[n.parse::<usize>().unwrap()].missing = true;
         }
     } else if let Some(subargs) = args.subcommand_matches("prune") {
         for n in subargs.values_of("id").unwrap() {

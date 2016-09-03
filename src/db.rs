@@ -23,6 +23,7 @@ pub struct Metadata {
     pub id: String,
     pub info: StoryInfo,
     pub pruned: bool,
+    pub missing: bool,
     pub filename: String,
 }
 
@@ -66,6 +67,7 @@ pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) -> bool {
                 id: id.to_string(),
                 info: info,
                 pruned: false,
+                missing: false,
                 filename: filename,
             });
             return true;
@@ -88,6 +90,7 @@ pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) -> bool {
                 id: id.to_string(),
                 info: info,
                 pruned: false,
+                missing: false,
                 filename: filename,
             });
             return true;
@@ -110,6 +113,7 @@ pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) -> bool {
                 id: id.to_string(),
                 info: info,
                 pruned: false,
+                missing: false,
                 filename: filename,
             });
             return true;
@@ -135,6 +139,9 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
         if entry.pruned {
             // Ignoring result of remove_file because e.g. the file may already not exist.
             let _ = std::fs::remove_file(&path);
+            continue;
+        }
+        if entry.missing {
             continue;
         }
         let mut info = match entry.site {
