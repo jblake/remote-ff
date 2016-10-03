@@ -189,6 +189,14 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
     let fb2path = Path::new(fb2path);
     println!("Opening peer database...");
     let peerdb = rusqlite::Connection::open(peerdbpath).unwrap();
+    // The query_rows here would be better as executes, but rusqlite complains :-(
+    // Of course, I could write all these as proper statements and just ignore their results, but that's even uglier.
+    peerdb.execute("PRAGMA cache_size = -65536", &[]).unwrap();
+    peerdb.query_row("PRAGMA journal_mode = OFF", &[], |_|{}).unwrap();
+    peerdb.query_row("PRAGMA locking_mode = EXCLUSIVE", &[], |_|{}).unwrap();
+    peerdb.query_row("PRAGMA mmap_size = 0", &[], |_|{}).unwrap();
+    peerdb.execute("PRAGMA synchronous = OFF", &[]).unwrap();
+    peerdb.execute("PRAGMA temp_store = MEMORY", &[]).unwrap();
     println!("Scanning entries...");
     for entry in db.iter() {
         let peerpath = peerfb2path.join(&*entry.filename);
