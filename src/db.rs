@@ -6,6 +6,7 @@ use rusqlite;
 use rustc_serialize::json;
 use std::fs::File;
 use std::io::prelude::*;
+use std::io;
 use std::path::Path;
 use std;
 use time;
@@ -198,7 +199,14 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
     peerdb.execute("PRAGMA synchronous = OFF", &[]).unwrap();
     peerdb.execute("PRAGMA temp_store = MEMORY", &[]).unwrap();
     println!("Scanning entries...");
+    let mut charidx = 0;
+    let chars = vec!['/', '-', '\\', '|'];
+    let mut n = 1;
     for entry in db.iter() {
+        print!("\x0d\x1b[K{} {}%", chars[charidx], (100.0 * n as f32 / db.len() as f32).round());
+        io::stdout().flush().unwrap();
+        charidx = (charidx + 1) % chars.len();
+        n += 1;
         let peerpath = peerfb2path.join(&*entry.filename);
         let selfpath = fb2path.join(&*entry.filename);
         let sqlpath = peerprefix.join(&*entry.filename);
