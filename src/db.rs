@@ -203,7 +203,7 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
     let chars = vec!['/', '-', '\\', '|'];
     let mut n = 1;
     for entry in db.iter() {
-        print!("\x0d\x1b[K{} {}%", chars[charidx], (100.0 * n as f32 / db.len() as f32).round());
+        print!("\x0d\x1b[K{} {}%", chars[charidx], (100.0 * n as f32 / db.len() as f32).floor());
         io::stdout().flush().unwrap();
         charidx = (charidx + 1) % chars.len();
         n += 1;
