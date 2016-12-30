@@ -166,27 +166,32 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
             let updated = info != entry.info && info.updated < one_hour_ago;
             let random = rdist.ind_sample(&mut rng) < 0.0125;
             if missing || updated || random {
-                if missing {
-                    print!("[new] ");
-                } else if updated {
-                    print!("[upd] ");
-                } else if random {
-                    print!("[rnd] ");
-                }
                 let book = match entry.site {
                     Sitename::Aooo => Aooo::compile(client, &*entry.id, &info),
                     Sitename::Ffn => Ffn::compile(client, &*entry.id, &info),
                     Sitename::Hpffa => Hpffa::compile(client, &*entry.id, &info),
                 };
                 if let Some(book) = book {
-                    {
-                        let mut fh = File::create(path.clone()).unwrap();
-                        fh.write_all(book.as_bytes()).unwrap();
+                    let bytes = book.as_bytes();
+                    let mut grew = false;
+                    if let Ok(meta) = path.metadata() {
+                        grew = bytes.len() > meta.len() as usize;
                     }
-                    let time = filetime::FileTime::from_seconds_since_1970(info.updated as u64, 0);
-                    let _ = filetime::set_file_times(path, time, time);
-                    entry.info = info;
-                    println!("Wrote new version of {}", entry.filename);
+                    if missing || updated || grew {
+                        if missing {
+                            print!("[new] ");
+                        } else if updated {
+                            print!("[upd] ");
+                        } else if random {
+                            print!("[rnd] ");
+                        }
+                        let mut fh = File::create(path.clone()).unwrap();
+                        fh.write_all(bytes).unwrap();
+                        let time = filetime::FileTime::from_seconds_since_1970(info.updated as u64, 0);
+                        let _ = filetime::set_file_times(path, time, time);
+                        entry.info = info;
+                        println!("Wrote new version of {}", entry.filename);
+                    }
                 } else {
                     println!("Could not download updated chapters for {}", entry.filename);
                 }
