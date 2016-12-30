@@ -139,7 +139,7 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
         .create(fb2path)
         .unwrap();
     let fb2path = Path::new(fb2path);
-    for entry in db.iter_mut() {
+    for entry in db.iter_mut().rev() {
         let path = fb2path.join(&*entry.filename);
         if entry.pruned {
             // Ignoring result of remove_file because e.g. the file may already not exist.
