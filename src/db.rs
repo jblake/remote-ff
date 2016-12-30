@@ -1,6 +1,8 @@
 use filetime;
 use hyper::client::Client;
 use parse::*;
+use rand;
+use rand::distributions::IndependentSample;
 use regex::Regex;
 use rusqlite;
 use rustc_serialize::json;
@@ -130,6 +132,8 @@ pub fn add(db: &mut Vec<Metadata>, url: &str, client: &Client) -> bool {
 
 pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
     let one_hour_ago = time::now_utc().to_timespec().sec - 3600;
+    let mut rng = rand::thread_rng();
+    let rdist = rand::distributions::Range::new(0f32, 1f32);
     std::fs::DirBuilder::new()
         .recursive(true)
         .create(fb2path)
@@ -158,7 +162,17 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
             };
         }
         if let Some(info) = info {
-            if ! path.exists() || (info != entry.info && info.updated < one_hour_ago){
+            let missing = ! path.exists();
+            let updated = info != entry.info && info.updated < one_hour_ago;
+            let random = rdist.ind_sample(&mut rng) < 0.05;
+            if missing || updated || random {
+                if missing {
+                    print!("[new] ");
+                } else if updated {
+                    print!("[upd] ");
+                } else if random {
+                    print!("[rnd] ");
+                }
                 let book = match entry.site {
                     Sitename::Aooo => Aooo::compile(client, &*entry.id, &info),
                     Sitename::Ffn => Ffn::compile(client, &*entry.id, &info),
