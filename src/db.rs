@@ -164,7 +164,7 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client) {
         if let Some(info) = info {
             let missing = ! path.exists();
             let updated = info != entry.info && info.updated < one_hour_ago;
-            let random = rdist.ind_sample(&mut rng) < 0.05;
+            let random = rdist.ind_sample(&mut rng) < 0.0125;
             if missing || updated || random {
                 if missing {
                     print!("[new] ");
