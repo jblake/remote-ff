@@ -273,7 +273,6 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
                         print!("\x0d\x1b[KRestore badlen {}", entry.filename);
                         io::stdout().flush().unwrap();
                         if let Ok(_) = std::fs::copy(&selfpath, &peerpath) {
-                            peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
                             println!("");
                         } else {
                             println!("\n\tCopy failed.");
