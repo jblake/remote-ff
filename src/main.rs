@@ -49,6 +49,11 @@ fn main() {
             )
         .subcommand(SubCommand::with_name("download")
             .about("Check for updates and rebuild .fb2 files")
+            .arg(Arg::with_name("all")
+                 .short("a")
+                 .long("all")
+                 .help("Force redownload of all books")
+                 )
             )
         .subcommand(SubCommand::with_name("import")
             .about("Import from old version of remote-ff")
@@ -106,8 +111,8 @@ fn main() {
                 db::save(dbpath, &meta);
             }
         }
-    } else if let Some(_) = args.subcommand_matches("download") {
-        db::download(&mut meta, args.value_of("fb2path").unwrap_or("books"), &http);
+    } else if let Some(subargs) = args.subcommand_matches("download") {
+        db::download(&mut meta, args.value_of("fb2path").unwrap_or("books"), &http, subargs.is_present("all"));
     } else if let Some(subargs) = args.subcommand_matches("import") {
         let db = rusqlite::Connection::open(subargs.value_of("olddb").unwrap()).unwrap();
         let mut stmt = db.prepare("SELECT site, ref FROM story WHERE NOT pruned").unwrap();
