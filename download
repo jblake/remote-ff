@@ -4,8 +4,9 @@ set -eux
 
 cd ~/remote-ff
 
-fusermount -u peer > /dev/null 2>&1 || true
-
 cargo build --release
+
+rm -rf books-old
+cp -rl books books-old
 
 time target/release/remote-ff download

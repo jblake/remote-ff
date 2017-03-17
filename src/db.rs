@@ -191,10 +191,15 @@ pub fn download(db: &mut Vec<Metadata>, fb2path: &str, client: &Client, all: boo
                         } else if all {
                             print!("[all] ");
                         }
-                        let mut fh = File::create(path.clone()).unwrap();
-                        fh.write_all(bytes).unwrap();
+                        let mut tmp = path.clone();
+                        tmp.set_extension(".tmp");
+                        {
+                            let mut fh = File::create(&tmp).unwrap();
+                            fh.write_all(bytes).unwrap();
+                        }
                         let time = filetime::FileTime::from_seconds_since_1970(info.updated as u64, 0);
-                        let _ = filetime::set_file_times(path, time, time);
+                        let _ = filetime::set_file_times(&tmp, time, time);
+                        std::fs::rename(&tmp, path).unwrap();
                         println!("Wrote new version of {} (+{}b)", entry.filename, delta);
                     }
                     entry.info = info;
@@ -279,7 +284,7 @@ pub fn sync(db: &Vec<Metadata>, fb2path: &str, peer: &str) {
                         print!("\x0d\x1b[KRestore badlen {}", entry.filename);
                         io::stdout().flush().unwrap();
                         if let Ok(_) = std::fs::copy(&selfpath, &peerpath) {
-                            peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
+                            peerdb.execute("UPDATE books SET book = ?, author = ?, addTime = ?, favorite = 'default_fav', downloadUrl = ? where lowerFilename = ?", &[&entry.info.title, &entry.info.author, &timestr, &urlstr, &sqlpathlstr]).unwrap();
                             println!("");
                         } else {
                             println!("\n\tCopy failed.");
