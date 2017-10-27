@@ -6,11 +6,11 @@ authors = ["Julian Blake Kongslie <jblake@jblake.org>"]
 [dependencies]
 clap = "*"
 filetime = "*"
-hyper = "*"
+hyper = "0.9.*"
 lazy_static = "*"
 marksman_escape = "*"
 rand = "*"
-regex = "*"
+regex = "0.1.*"
 rusqlite = "*"
 rustc-serialize = "*"
 rustful = "*"
