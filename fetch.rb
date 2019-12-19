@@ -266,7 +266,7 @@ end
 
       if not entry["filename"] or not File.exist?("books/#{entry["filename"]}") then
         $stdout.write("\tLocal file does not exist, will download.\n")
-        entry["filename"] = "#{i}.ffn#{safepath(entry["id"])}.#{safepath(title)}.#{safepath(author)}.fb2" unless entry["filename"]
+        entry["filename"] = "#{i}.hpffa#{safepath(entry["id"])}.#{safepath(title)}.#{safepath(author)}.fb2" unless entry["filename"]
       elsif entry["info"] != info then
         $stdout.write("\tMetadata has been changed, will download.\n")
         $stdout.write("\t\told: #{entry["info"].inspect}\n")
