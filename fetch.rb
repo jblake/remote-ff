@@ -6,7 +6,7 @@ require "nokogiri"
 require "time"
 
 CHECK_PROBABILITY = 0.25 # Will check for updated metadata with this probability
-FORCE_PROBABILITY = 0.05 # Will download regardless of metadata with this probability
+FORCE_PROBABILITY = 0.01 # Will download regardless of metadata with this probability
 
 FFN_CHAPTER = /chapter\s+\S+:?\s+(.+?)\s*$/i
 
