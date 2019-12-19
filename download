@@ -4,9 +4,10 @@ set -eux
 
 cd ~/remote-ff
 
-cargo build --release
-
 rm -rf books-old
 cp -rl books books-old
 
-time target/release/remote-ff download
+time ./fetch.rb
+
+cd books
+ls -lt --time-style=+%Y-%m-%d | awk -e '{print $6, $7}' > /srv/www/jblake/books.txt

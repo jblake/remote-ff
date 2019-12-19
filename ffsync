@@ -4,21 +4,14 @@ set -eux
 
 cd ~/remote-ff
 
-fusermount -u peer > /dev/null 2>&1 || true
+ssh tablet-fwd "while pkill com.flyersoft.moonreaderp; do sleep 1; done"
 
-cargo build --release
+./mkupdate.rb db.json > books/update.sql
 
-mkdir -p peer
+rsync --archive --progress books/ tablet-fwd:/storage/emulated/0/Books/
 
-until sshfs -C -o entry_timeout=600 -o attr_timeout=600 tablet:/ peer; do
-  sleep 0.1
-done
+ssh tablet-fwd "sqlite3 -batch /data/data/com.flyersoft.moonreaderp/databases/mrbooks.db < /storage/emulated/0/Books/update.sql"
 
-ls -lR peer/storage/emulated/0/Books > /dev/null &
-ssh tablet "while pkill com.flyersoft.moonreaderp; do sleep 1; done" &
-
-wait
-
-time target/release/remote-ff sync peer || true
-
-fusermount -u peer > /dev/null 2>&1 || true
+cd books
+touch LAST-SYNC
+ls -lt --time-style=+%Y-%m-%d | awk -e '{print $6, $7}' > /srv/www/jblake/books.txt
