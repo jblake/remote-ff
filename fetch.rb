@@ -309,6 +309,10 @@ end
       throw "Unrecognized site"
     end
 
+  rescue Interrupt => e
+    throw e
+  rescue SignalException => e
+    throw e
   rescue Object => e
     $stdout.write("! Got an exception in entry #{i}: #{e}\n")
   end
