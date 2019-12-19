@@ -1,6 +1,7 @@
 #!/usr/bin/ruby -w
 
 require "faraday"
+require "fileutils"
 require "json"
 require "nokogiri"
 require "time"
@@ -117,6 +118,7 @@ END
 END
   end
   File.rename("#{path}.tmp", path)
+  FileUtils.touch(path, mtime: info["updated"])
 end
 
 def safepath(path)
