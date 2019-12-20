@@ -7,7 +7,12 @@ require "nokogiri"
 require "time"
 
 CHECK_PROBABILITY = 0.25 # Will check for updated metadata with this probability
-FORCE_PROBABILITY = 0.01 # Will download regardless of metadata with this probability
+
+if ARGV.size() > 0 then
+  FORCE_PROBABILITY = 1.00
+else
+  FORCE_PROBABILITY = 0.01 # Will download regardless of metadata with this probability
+end
 
 FFN_CHAPTER = /chapter\s+\S+:?\s+(.+?)\s*$/i
 
@@ -132,7 +137,13 @@ def writedb()
   File.rename("db.json.tmp", "db.json")
 end
 
-($db.size() - 1).downto(0) do | i |
+if ARGV.size() > 0 then
+  range = ARGV.map() { | x | x.to_i() }
+else
+  range = ($db.size() - 1).downto(0)
+end
+
+range.each() do | i |
   begin
     entry = $db[i]
     p = rand()
