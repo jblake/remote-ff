@@ -45,6 +45,7 @@ def sanitize(parent, fh, inp, formatting)
     if node.text? then
       txt = node.to_s()
       blank = txt.strip() == ""
+      txt.gsub!(/\s+/, " ")
       enterp(fh, formatting) unless blank or inp
       fh.write(txt) unless blank and not inp
       inp = true unless blank
