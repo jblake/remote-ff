@@ -21,7 +21,7 @@ def escape(text)
 end
 
 def enterp(fh, formatting)
-  fh.write("<p>")
+  fh.write("      <p>")
   formatting.each() do | n |
     fh.write("<#{n}>")
   end
@@ -58,7 +58,7 @@ def sanitize(parent, fh, inp, formatting)
         inp = true
       when "hr"
         leavep(fh, formatting) if inp
-        fh.write("<empty-line/>")
+        fh.write("      <empty-line/>")
         enterp(fh, formatting) if inp
       when "br"
         newp(fh, inp, formatting)
