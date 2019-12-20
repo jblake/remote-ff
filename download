@@ -4,8 +4,8 @@ set -eux
 
 cd ~/remote-ff
 
-rm -rf books-old
-cp -rl books books-old
+rm -rf old-books
+cp -rl books old-books
 
 time ./fetch.rb
 
