@@ -137,6 +137,40 @@ def writedb()
   File.rename("db.json.tmp", "db.json")
 end
 
+def download?(p, i, entry, info)
+  if info["title"] == "" then
+    $stdout.write("#{i}: <missing>, entry: #{entry.inspect}\n")
+    entry["missing"] = 0 unless entry["missing"]
+    entry["missing"] += 1
+    writedb()
+    return false
+  end
+
+  $stdout.write("#{i}: #{info["title"]} by #{info["author"]}\n")
+
+  if entry["missing"] then
+    entry.delete("missing")
+    writedb()
+  end
+
+  if not entry["filename"] or not File.exist?("books/#{entry["filename"]}") then
+    $stdout.write("\tLocal file does not exist, will download.\n")
+    entry["filename"] = "#{i}.#{safepath(entry["site"])}#{safepath(entry["id"])}.#{safepath(title)}.#{safepath(author)}.fb2" unless entry["filename"]
+  elsif entry["info"] != info then
+    $stdout.write("\tMetadata has been changed, will download.\n")
+    $stdout.write("\t\told: #{entry["info"].inspect}\n")
+    $stdout.write("\t\tnew: #{info.inspect}\n")
+  elsif p < FORCE_PROBABILITY then
+    $stdout.write("\tRandomly forced, will download.\n")
+  else
+    return false
+  end
+
+  entry["info"] = info
+
+  return true
+end
+
 if ARGV.size() > 0 then
   range = ARGV.map() { | x | x.to_i() }
 else
@@ -175,19 +209,6 @@ range.each() do | i |
       else
         chapters = 1
       end
-      if title == "" then
-        $stdout.write("#{i}: <missing>, entry: #{entry.inspect}\n")
-        entry["missing"] = 0 unless entry["missing"]
-        entry["missing"] += 1
-        writedb()
-        next
-      end
-      $stdout.write("#{i}: #{title} by #{author}\n")
-
-      if entry["missing"] and entry["missing"] > 0 then
-        entry.delete("missing")
-        writedb()
-      end
 
       info = {
         "author" => author,
@@ -196,18 +217,7 @@ range.each() do | i |
         "updated" => updated,
       }
 
-      if not entry["filename"] or not File.exist?("books/#{entry["filename"]}") then
-        $stdout.write("\tLocal file does not exist, will download.\n")
-        entry["filename"] = "#{i}.ffn#{safepath(entry["id"])}.#{safepath(title)}.#{safepath(author)}.fb2" unless entry["filename"]
-      elsif entry["info"] != info then
-        $stdout.write("\tMetadata has been changed, will download.\n")
-        $stdout.write("\t\told: #{entry["info"].inspect}\n")
-        $stdout.write("\t\tnew: #{info.inspect}\n")
-      elsif p < FORCE_PROBABILITY then
-        $stdout.write("\tRandomly forced, will download.\n")
-      else
-        next
-      end
+      next unless download?(p, i, entry, info)
 
       ctitle = page.xpath("//div[@id=\"content\"]/text()")[-1].to_s()
       if ctitle =~ FFN_CHAPTER then
@@ -221,7 +231,6 @@ range.each() do | i |
       parts = [{"title" => ctitle, "content" => ccontent}]
 
       2.upto(chapters) do | c |
-#        $stdout.write("\tFetching chapter #{c}...\n")
         chtml = Faraday.get("https://fanfiction.jblake.org/s/#{entry["id"]}/#{c}").body
         cpage = Nokogiri::HTML.parse(chtml)
         title = cpage.xpath("//div[@id=\"content\"]/div[1]/b/text()")[0].to_s()
@@ -242,9 +251,7 @@ range.each() do | i |
         parts << {"title" => ctitle, "content" => ccontent}
       end
 
-#      $stdout.write("\tSanitizing and writing...\n")
       mkfb2("books/#{entry["filename"]}", info, parts)
-      entry["info"] = info
       writedb()
 
     when "hpffa"
@@ -256,19 +263,6 @@ range.each() do | i |
       updated = page.xpath("//comment()[.=\" PUBLISHED START \"]/following-sibling::text()[1]")
       updated += page.xpath("//comment()[.=\" UPDATED START \"]/following-sibling::text()[1]")
       updated = updated.map { | x | Time.parse(x.to_s()).utc().to_i() }.max()
-      if title == "" then
-        $stdout.write("#{i}: <missing>, entry: #{entry.inspect}\n")
-        entry["missing"] = 0 unless entry["missing"]
-        entry["missing"] += 1
-        writedb()
-        next
-      end
-      $stdout.write("#{i}: #{title} by #{author}\n")
-
-      if entry["missing"] and entry["missing"] > 0 then
-        entry.delete("missing")
-        writedb()
-      end
 
       info = {
         "author" => author,
@@ -277,23 +271,11 @@ range.each() do | i |
         "updated" => updated,
       }
 
-      if not entry["filename"] or not File.exist?("books/#{entry["filename"]}") then
-        $stdout.write("\tLocal file does not exist, will download.\n")
-        entry["filename"] = "#{i}.hpffa#{safepath(entry["id"])}.#{safepath(title)}.#{safepath(author)}.fb2" unless entry["filename"]
-      elsif entry["info"] != info then
-        $stdout.write("\tMetadata has been changed, will download.\n")
-        $stdout.write("\t\told: #{entry["info"].inspect}\n")
-        $stdout.write("\t\tnew: #{info.inspect}\n")
-      elsif p < FORCE_PROBABILITY then
-        $stdout.write("\tRandomly forced, will download.\n")
-      else
-        next
-      end
+      next unless download?(p, i, entry, info)
 
       parts = []
 
       1.upto(chapters) do | c |
-#        $stdout.write("\tFetching chapter #{c}...\n")
         chtml = Faraday.get("http://www.hpfanficarchive.com/stories/viewstory.php?action=printable&sid=#{entry["id"]}&chapter=#{c}").body.force_encoding("iso-8859-1").encode("utf-8")
         cpage = Nokogiri::HTML.parse(chtml)
         title = cpage.xpath("//div[@id=\"pagetitle\"]/a[1]/text()")[0].to_s().strip()
@@ -312,9 +294,7 @@ range.each() do | i |
         parts << {"title" => ctitle, "content" => ccontent}
       end
 
-#      $stdout.write("\tSanitizing and writing...\n")
       mkfb2("books/#{entry["filename"]}", info, parts)
-      entry["info"] = info
       writedb()
 
     else
