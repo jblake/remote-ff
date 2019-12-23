@@ -8,8 +8,8 @@ ssh tablet-fwd "while pkill com.flyersoft.moonreaderp; do sleep 1; done"
 
 ./mkupdate.rb db.json > books/update.sql
 
-mv LAST-SYNC NOT-UPDATED
-touch LAST-SYNC
+mv -f books/LAST-SYNC books/NOT-UPDATED
+touch books/LAST-SYNC
 
 rsync --archive --progress books/ tablet-fwd:/storage/emulated/0/Books/
 
