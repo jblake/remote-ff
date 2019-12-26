@@ -6,7 +6,7 @@ require "json"
 require "nokogiri"
 require "time"
 
-CHECK_PROBABILITY = 0.25 # Will check for updated metadata with this probability
+CHECK_PROBABILITY = 0.50 # Will check for updated metadata with this probability
 
 if ARGV.size() > 0 then
   FORCE_PROBABILITY = 1.00
