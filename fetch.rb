@@ -191,7 +191,9 @@ range.each() do | i |
       writedb()
     end
 
-    next unless p < CHECK_PROBABILITY or p < FORCE_PROBABILITY
+    if entry["info"]
+      next unless p < CHECK_PROBABILITY or p < FORCE_PROBABILITY
+    end
 
     next if entry["pruned"]
     next if entry["missing"] and entry["missing"] >= 10
