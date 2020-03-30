@@ -310,6 +310,6 @@ range.each() do | i |
   rescue SignalException => e
     throw e
   rescue Object => e
-    $stdout.write("! Got an exception in entry #{i}: #{e}\n")
+    $stdout.write("! Got an exception in entry #{i}: #{e}\n#{e.backtrace.join("\n")}\n")
   end
 end
