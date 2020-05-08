@@ -7,7 +7,7 @@ cd ~/remote-ff
 rm -rf old-books
 cp -rl books old-books
 
-time timeout 1h ./fetch.rb "$@"
+time timeout 1h ./fetch.rb "$@" || true
 
 cd books
 ls -lt --time-style=+%Y-%m-%d | awk -e '{print $6, $7}' > /srv/www/jblake/books.txt
