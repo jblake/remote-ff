@@ -335,7 +335,9 @@ range.each() do | i |
     throw e
   rescue SignalException => e
     throw e
+  rescue Faraday::ConnectionFailed => e
+    $stdout.write("!\tCouldn't connect in entry #{i}: #{e}\n")
   rescue Object => e
-    $stdout.write("! Got an exception in entry #{i}: #{e}\n#{e.backtrace.join("\n")}\n")
+    $stdout.write("!\tGot an exception in entry #{i}: #{e} (#{e.inspect})\n#{e.backtrace.join("\n")}\n")
   end
 end
