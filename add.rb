@@ -16,6 +16,9 @@ def add(url)
   when /^https?:\/\/(?:www\.|m\.)?fanfiction\.net\/s\/(\d+)/
     site = "ffn"
     id = $1
+  when /^https?:\/\/(?:www\.)?hpfanficarchive\.com\/stories\/viewstory\.php\?(?:[^&;]+[&;])*sid=(\d+)/
+    site = "hpffa"
+    id = $1
   else
     raise "Unrecognized URL #{url}"
   end
