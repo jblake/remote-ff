@@ -16,6 +16,32 @@ end
 
 FFN_CHAPTER = /chapter\s+\S+:?\s+(.+?)\s*$/i
 
+CONNECTION_TIME = 1.0
+DOWNLOAD_TIME = 10.0
+RETRY_ATTEMPTS = 1
+RETRY_BACKOFF = 1.1
+RETRY_TIME = 1.0
+
+HTTP = Faraday.new do | c |
+
+  $last_retry_url = nil
+
+  def did_retry(env, opts, num, except)
+    if $last_retry_url != env.url
+      $last_retry_url = env.url
+      $stdout.write("!\tProblematic URL: #{env.url}\n")
+    end
+    $stdout.write("!\tRetry (#{RETRY_ATTEMPTS-num}/#{RETRY_ATTEMPTS}) due to #{except}\n")
+  end
+
+  c.options.open_timeout = CONNECTION_TIME
+  c.options.timeout = DOWNLOAD_TIME
+  c.request :retry, max: RETRY_ATTEMPTS, interval: RETRY_TIME/((0..(RETRY_ATTEMPTS-1)).map{|x|RETRY_BACKOFF**x}.sum), backoff_factor: RETRY_BACKOFF, exceptions: Faraday::Request::Retry::DEFAULT_EXCEPTIONS + [Faraday::ConnectionFailed, "Net::OpenTimeout"], retry_block: method(:did_retry)
+  c.adapter :net_http_persistent do | p |
+    p.idle_timeout = 10
+  end
+end
+
 def escape(text)
   return Nokogiri::XML::Text.new(text, Nokogiri::XML::Document.new()).to_s()
 end
@@ -201,7 +227,7 @@ range.each() do | i |
     case entry["site"]
 
     when "ffn"
-      html = Faraday.get("https://fanfiction.jblake.org/s/#{entry["id"]}").body
+      html = HTTP.get("https://fanfiction.jblake.org/s/#{entry["id"]}").body
       page = Nokogiri::HTML.parse(html)
       title = page.xpath("//div[@id=\"content\"]/div[1]/b/text()")[0].to_s().strip()
       author = page.xpath("//div[@id=\"content\"]/div[1]/a/text()")[0].to_s().strip()
@@ -234,11 +260,11 @@ range.each() do | i |
       parts = [{"title" => ctitle, "content" => ccontent}]
 
       2.upto(chapters) do | c |
-        chtml = Faraday.get("https://fanfiction.jblake.org/s/#{entry["id"]}/#{c}").body
+        chtml = HTTP.get("https://fanfiction.jblake.org/s/#{entry["id"]}/#{c}").body
         cpage = Nokogiri::HTML.parse(chtml)
         title = cpage.xpath("//div[@id=\"content\"]/div[1]/b/text()")[0].to_s()
         if title == "" then
-          $stdout.write("\tCouldn't fetch chapter #{c}, giving up.\n")
+          $stdout.write("!\tCouldn't fetch chapter #{c}, giving up.\n")
           throw "Couldn't fetch chapter in download phase"
         end
 
@@ -258,7 +284,7 @@ range.each() do | i |
       writedb()
 
     when "hpffa"
-      html = Faraday.get("http://www.hpfanficarchive.com/stories/viewstory.php?sid=#{entry["id"]}").body.force_encoding("iso-8859-1").encode("utf-8")
+      html = HTTP.get("http://www.hpfanficarchive.com/stories/viewstory.php?sid=#{entry["id"]}").body.force_encoding("iso-8859-1").encode("utf-8")
       page = Nokogiri::HTML.parse(html)
       title = page.xpath("//div[@id=\"pagetitle\"]/a[1]/text()")[0].to_s().strip()
       author = page.xpath("//div[@id=\"pagetitle\"]/a[2]/text()")[0].to_s().strip()
@@ -279,11 +305,11 @@ range.each() do | i |
       parts = []
 
       1.upto(chapters) do | c |
-        chtml = Faraday.get("http://www.hpfanficarchive.com/stories/viewstory.php?action=printable&sid=#{entry["id"]}&chapter=#{c}").body.force_encoding("iso-8859-1").encode("utf-8")
+        chtml = HTTP.get("http://www.hpfanficarchive.com/stories/viewstory.php?action=printable&sid=#{entry["id"]}&chapter=#{c}").body.force_encoding("iso-8859-1").encode("utf-8")
         cpage = Nokogiri::HTML.parse(chtml)
         title = cpage.xpath("//div[@id=\"pagetitle\"]/a[1]/text()")[0].to_s().strip()
         if title == "" then
-          $stdout.write("\tCouldn't fetch chapter #{c}, giving up.\n")
+          $stdout.write("!\tCouldn't fetch chapter #{c}, giving up.\n")
           throw "Couldn't fetch chapter in download phase"
         end
 
